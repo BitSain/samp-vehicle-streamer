@@ -39,13 +39,24 @@ jobs:
           $output = Join-Path $env:GITHUB_WORKSPACE "artifacts\${{ matrix.output }}"
           New-Item -ItemType Directory -Force -Path $output | Out-Null
 
+          $sdkInclude = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\Include"
+          $sdk = Get-ChildItem -Path $sdkInclude -Directory |
+            Where-Object { $_.Name -match '^10\.0\.\d+\.0$' } |
+            Sort-Object Name -Descending |
+            Select-Object -First 1
+          if ($null -eq $sdk) {
+            Write-Error "Nenhum Windows SDK instalado em $sdkInclude"
+            exit 1
+          }
+          Write-Host "Windows SDK selecionado: $($sdk.Name)"
+
           msbuild .\vehicle-streamer.sln `
             /m `
             /t:Build `
             /p:Configuration=Release `
             /p:Platform=${{ matrix.platform }} `
             /p:PlatformToolset=v143 `
-            /p:WindowsTargetPlatformVersion=10.0.19041.0 `
+            /p:WindowsTargetPlatformVersion=$($sdk.Name) `
             /p:OutDir="$output\"
 
           $dll = Get-ChildItem -Path $output -Filter *.dll -File -Recurse | Select-Object -First 1
