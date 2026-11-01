@@ -1,0 +1,97 @@
+name: Build Windows plugin
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: x86
+            output: win32
+          - platform: x64
+            output: x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Release DLL
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:GITHUB_WORKSPACE "artifacts\${{ matrix.output }}"
+          New-Item -ItemType Directory -Force -Path $output | Out-Null
+
+          msbuild .\vehicle-streamer.sln `
+            /m `
+            /t:Build `
+            /p:Configuration=Release `
+            /p:Platform=${{ matrix.platform }} `
+            /p:PlatformToolset=v143 `
+            /p:WindowsTargetPlatformVersion=10.0.19041.0 `
+            /p:OutDir="$output\"
+
+          $dll = Get-ChildItem -Path $output -Filter *.dll -File -Recurse | Select-Object -First 1
+          if ($null -eq $dll) {
+            Write-Error "Nenhuma DLL foi gerada em $output"
+            exit 1
+          }
+
+          Write-Host "DLL gerada: $($dll.FullName)"
+          Copy-Item $dll.FullName (Join-Path $output "vehicle-streamer.dll") -Force
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: samp-vehicle-streamer-windows-${{ matrix.output }}
+          path: artifacts/${{ matrix.output }}/vehicle-streamer.dll
+          if-no-files-found: error
+          retention-days: 14
+
+  package:
+    name: Package Windows artifacts
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - name: Download x86 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: samp-vehicle-streamer-windows-win32
+          path: package/plugins
+
+      - name: Download x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: samp-vehicle-streamer-windows-x64
+          path: package/plugins-x64
+
+      - name: Create combined ZIP
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package/plugins | Out-Null
+          Compress-Archive -Path package/plugins, package/plugins-x64 -DestinationPath samp-vehicle-streamer-windows.zip -Force
+
+      - name: Upload combined package
+        uses: actions/upload-artifact@v4
+        with:
+          name: samp-vehicle-streamer-windows
+          path: samp-vehicle-streamer-windows.zip
+          if-no-files-found: error
+          retention-days: 14
