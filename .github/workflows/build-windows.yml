@@ -66,7 +66,6 @@ jobs:
           }
 
           Write-Host "DLL gerada: $($dll.FullName)"
-          Copy-Item $dll.FullName (Join-Path $output "vehicle-streamer.dll") -Force
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
