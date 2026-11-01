@@ -39,7 +39,7 @@ cell AMX_NATIVE_CALL Native::CreateDynamicVehicle(AMX* amx, cell* params)
 
 	size_t vehicleid = SlotManager::Free_ID();
 
-	std::unique_ptr<vdata> v(new vdata());
+	std::unique_ptr<vdata> v(new vdata{});
 
 	v->real_id = INVALID_REAL_ID;
 	v->lock_mode = false;
@@ -68,7 +68,7 @@ cell AMX_NATIVE_CALL Native::CreateDynamicVehicle(AMX* amx, cell* params)
 	}
 	v->paintjob = 3;
 	v->arac_hp = 1000.0;
-	v->plaka[0] = '\0';
+	v->plaka.clear();
 	v->engine = -1;
 	v->lights = -1;
 	v->alarm = -1;
@@ -528,6 +528,10 @@ cell AMX_NATIVE_CALL Native::AddDynamicVehicleComponent(AMX* amx, cell* params)
 	if (it != VehicleData::vList.end())
 	{
 		int slot = GetVehicleComponentType(componentid);
+		if (slot < 0 || slot >= 14)
+		{
+			return 0;
+		}
 		it->second->modifiye[slot] = componentid;
 		if (it->second->real_id != INVALID_REAL_ID)
 		{
@@ -547,6 +551,10 @@ cell AMX_NATIVE_CALL Native::RemoveDynamicVehicleComponent(AMX* amx, cell* param
 	if (it != VehicleData::vList.end())
 	{
 		int slot = GetVehicleComponentType(componentid);
+		if (slot < 0 || slot >= 14)
+		{
+			return 0;
+		}
 
 		if (it->second->modifiye[slot] == componentid)
 		{
@@ -677,7 +685,7 @@ cell AMX_NATIVE_CALL Native::GetDynVehicleComponentInSlot(AMX* amx, cell* params
 	std::unordered_map<size_t, std::unique_ptr<vdata>>::iterator it = VehicleData::vList.find(vehicleid);
 	if (it != VehicleData::vList.end())
 	{
-		if (slot > 0 && slot <= 13)
+		if (slot >= 0 && slot < 14)
 		{
 			return static_cast<int>(it->second->modifiye[slot]);
 		}
@@ -873,7 +881,10 @@ cell AMX_NATIVE_CALL Native::PutPlayerInDynamicVehicle(AMX* amx, cell* params)
 		{
 			it->second->lock_mode = true;
 			vFunction::Vehicle_Create(it->first);
-			PutPlayerInVehicle(playerid, it->second->real_id, seat);
+			if (it->second->real_id != INVALID_REAL_ID)
+			{
+				PutPlayerInVehicle(playerid, it->second->real_id, seat);
+			}
 			it->second->lock_mode = false;
 		}
 		return 1;
@@ -936,7 +947,10 @@ cell AMX_NATIVE_CALL Native::PlayerSpectateDynamicVehicle(AMX* amx, cell* params
 		{
 			it->second->lock_mode = true;
 			vFunction::Vehicle_Create(it->first);
-			PlayerSpectateVehicle(playerid, it->second->real_id, mode);
+			if (it->second->real_id != INVALID_REAL_ID)
+			{
+				PlayerSpectateVehicle(playerid, it->second->real_id, mode);
+			}
 			it->second->lock_mode = false;
 		}
 		return 1;

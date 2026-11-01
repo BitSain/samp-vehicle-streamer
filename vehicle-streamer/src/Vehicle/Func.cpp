@@ -19,7 +19,10 @@
 
 float vFunction::Veh_Dist(float pX, float pY, float pZ, float vX, float vY, float vZ)
 {
-	return sqrt(powf(vX - pX, 2) + powf(vY - pY, 2) + powf(vZ - pZ, 2) * 1.0);
+	const float dx = vX - pX;
+	const float dy = vY - pY;
+	const float dz = vZ - pZ;
+	return sqrtf(dx * dx + dy * dy + dz * dz);
 }
 
 void vFunction::Vehicle_Create(size_t vehicleid)

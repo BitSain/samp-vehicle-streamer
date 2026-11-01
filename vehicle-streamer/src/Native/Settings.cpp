@@ -16,6 +16,9 @@
 
 #include "Settings.h"
 
+int64_t vTick_Rate = 30;
+int64_t vLastTick_Rate = 0;
+
 cell AMX_NATIVE_CALL Native::Vehicle_GetTickRate(AMX* amx, cell* params)
 {
 	return static_cast<cell>(vTick_Rate);
@@ -24,7 +27,7 @@ cell AMX_NATIVE_CALL Native::Vehicle_GetTickRate(AMX* amx, cell* params)
 cell AMX_NATIVE_CALL Native::Vehicle_SetTickRate(AMX* amx, cell* params)
 {
 	CHECK_PARAMS(1);
-	int rate = static_cast<int>(params[1]);
+	int64_t rate = static_cast<int64_t>(params[1]);
 	if (rate < 1)
 	{
 		rate = 1;

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <set>
+#include <cstdint>
 #include <vector>
 #include <chrono>
 #include <queue>

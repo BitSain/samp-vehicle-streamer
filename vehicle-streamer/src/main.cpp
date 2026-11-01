@@ -42,6 +42,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void** ppData)
 
 	// Reset Slot Manager
 	SlotManager::Reset();
+	vLastTick_Rate = 0;
 
 
 	pAMXFunctions = ppData[PLUGIN_DATA_AMX_EXPORTS];
@@ -64,6 +65,15 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void** ppData)
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload()
 {
+	for (std::unordered_map<size_t, std::unique_ptr<vdata>>::iterator it = VehicleData::vList.begin(); it != VehicleData::vList.end(); ++it)
+	{
+		if (it->second->real_id != INVALID_REAL_ID)
+		{
+			DestroyVehicle(it->second->real_id);
+			it->second->real_id = INVALID_REAL_ID;
+		}
+	}
+
 	// Clear vehicle data
 	VehicleData::vList.clear();
 
@@ -72,6 +82,7 @@ PLUGIN_EXPORT void PLUGIN_CALL Unload()
 
 	// Reset Slot Manager
 	SlotManager::Reset();
+	vLastTick_Rate = 0;
 
 	sampgdk::logprintf("");
 	sampgdk::logprintf(" ===============================");
@@ -150,22 +161,16 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX* amx)
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX* amx)
 {
-	// Clear vehicle data
-	VehicleData::vList.clear();
-
-	// Clear players
-	Player::pList.clear();
-
-	// Reset Slot Manager
-	SlotManager::Reset();
-
 	global_Amx.erase(amx);
 	return AMX_ERR_NONE;
 }
 
 bool PLUGIN_CALL OnPlayerConnect(int playerid)
 {
-	Player::pList.push_back(playerid);
+	if (std::find(Player::pList.begin(), Player::pList.end(), playerid) == Player::pList.end())
+	{
+		Player::pList.push_back(playerid);
+	}
 	return true;
 }
 
@@ -281,7 +286,7 @@ bool PLUGIN_CALL OnVehicleDeath(int vehicleid, int killerid)
 	{
 		if (it->second->real_id == vehicleid)
 		{
-			// araç patlayinca ilk oluþturulan konuma ayarla ve hasarlari sifirla
+			// araï¿½ patlayinca ilk oluï¿½turulan konuma ayarla ve hasarlari sifirla
 			it->second->lock_mode = true;
 
 			it->second->x = it->second->cx;
@@ -475,10 +480,10 @@ bool PLUGIN_CALL OnVehicleStreamOut(int vehicleid, int forplayerid)
 
 PLUGIN_EXPORT void PLUGIN_CALL ProcessTick()
 {
-	int n = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-	if (n > vLastTick_Rate)
+	const int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+	if (now >= vLastTick_Rate)
 	{
 		vSync::Vehicle_Sync();
-		vLastTick_Rate = n + vTick_Rate;
+		vLastTick_Rate = now + vTick_Rate;
 	}
 }
