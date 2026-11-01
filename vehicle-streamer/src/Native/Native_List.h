@@ -19,11 +19,18 @@
 #include "../precompiler.h"
 
 #define CHECK_PARAMS(n) \
-	if (params[0] != (n * 4)) \
-	{ \
-		sampgdk::logprintf("%s: Expecting %d parameter(s), but found %d.", __func__, n, params[0] / sizeof(cell)); \
-		return 0; \
-	}
+		if (params[0] != (n * 4)) \
+		{ \
+			sampgdk::logprintf("%s: Expecting %d parameter(s), but found %d.", __func__, n, params[0] / sizeof(cell)); \
+			return 0; \
+		}
+
+#define CHECK_PARAMS_RANGE(min, max) \
+		if (params[0] < (min * sizeof(cell)) || params[0] > (max * sizeof(cell))) \
+		{ \
+			sampgdk::logprintf("%s: Expecting between %d and %d parameter(s), but found %d.", __func__, min, max, params[0] / sizeof(cell)); \
+			return 0; \
+		}
 
 #define DEFINE_AMX_NATIVE(native) cell AMX_NATIVE_CALL native(AMX* amx, cell* params)
 #define REG_AMX_NATIVE(native_name) {#native_name, Native::native_name},

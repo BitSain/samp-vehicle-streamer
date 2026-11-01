@@ -22,7 +22,8 @@
 
 cell AMX_NATIVE_CALL Native::CreateDynamicVehicle(AMX* amx, cell* params)
 {
-	CHECK_PARAMS(12);
+	CHECK_PARAMS_RANGE(8, 12);
+	const int parameter_count = params[0] / sizeof(cell);
 
 	int modelid       = static_cast<int>(params[1]);
 	float x           = static_cast<float>(amx_ctof(params[2]));
@@ -32,10 +33,10 @@ cell AMX_NATIVE_CALL Native::CreateDynamicVehicle(AMX* amx, cell* params)
 	int color1        = static_cast<int>(params[6]);
 	int color2        = static_cast<int>(params[7]);
 	int respawn_delay = static_cast<int>(params[8]);
-	int addsiren      = static_cast<int>(params[9]);
-	int world         = static_cast<int>(params[10]);
-	int interior      = static_cast<int>(params[11]);
-	float dist        = static_cast<float>(amx_ctof(params[12]));
+	int addsiren      = parameter_count >= 9 ? static_cast<int>(params[9]) : 0;
+	int world         = parameter_count >= 10 ? static_cast<int>(params[10]) : 0;
+	int interior      = parameter_count >= 11 ? static_cast<int>(params[11]) : 0;
+	float dist        = parameter_count >= 12 ? static_cast<float>(amx_ctof(params[12])) : 200.0f;
 
 	size_t vehicleid = SlotManager::Free_ID();
 
